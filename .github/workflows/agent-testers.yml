@@ -67,7 +67,7 @@ on:
 permissions:
   contents: read
   actions: read
-  issues: read   # bug_report: read the issue to reproduce
+  issues: read # bug_report: read the issue to reproduce
 
 jobs:
   plan:
@@ -100,14 +100,14 @@ jobs:
         with:
           repository: ${{ inputs.source_repo }}
           ref: ${{ inputs.ref }}
-          token: ${{ secrets.SOURCE_REPO_TOKEN || github.token }}   # the secret only for a private app repo
+          token: ${{ secrets.SOURCE_REPO_TOKEN || github.token }} # the secret only for a private app repo
           path: src
           persist-credentials: false
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17" }
-      - uses: gradle/actions/setup-gradle@v4   # Gradle cache between runs
+      - uses: gradle/actions/setup-gradle@v4 # Gradle cache between runs
         with: { cache-read-only: false }
       - uses: actions/cache@v4
         with:
@@ -121,6 +121,7 @@ jobs:
           BUILD_ARGS: ${{ inputs.build_args }}
           BUILD_ARGS_SECRET: ${{ secrets.BUILD_ARGS }}
           ARTIFACT: ${{ inputs.apk_path }}
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/build/android.sh "$APP_DIR" "${{ inputs.framework }}"
       - name: Encrypt APK
         env: { ARTIFACT_PASSPHRASE: "${{ secrets.ARTIFACT_PASSPHRASE }}" }
@@ -146,12 +147,12 @@ jobs:
         with:
           repository: ${{ inputs.source_repo }}
           ref: ${{ inputs.ref }}
-          token: ${{ secrets.SOURCE_REPO_TOKEN || github.token }}   # the secret only for a private app repo
+          token: ${{ secrets.SOURCE_REPO_TOKEN || github.token }} # the secret only for a private app repo
           path: src
           persist-credentials: false
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - uses: actions/setup-java@v4   # Kotlin Multiplatform builds call Gradle from Xcode
+      - uses: actions/setup-java@v4 # Kotlin Multiplatform builds call Gradle from Xcode
         with: { distribution: temurin, java-version: "17" }
       - name: Latest Xcode
         run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
@@ -169,7 +170,7 @@ jobs:
           BUILD_ARGS: ${{ inputs.build_args }}
           BUILD_ARGS_SECRET: ${{ secrets.BUILD_ARGS }}
           ARTIFACT: ${{ inputs.ios_app_path }}
-          IOS_SCHEME: ${{ vars.IOS_SCHEME }}   # optional repo variable, for projects with several schemes
+          IOS_SCHEME: ${{ vars.IOS_SCHEME }} # optional repo variable, for projects with several schemes
         run: bash scripts/build/ios.sh "$APP_DIR" "${{ inputs.framework }}"
       - name: Encrypt .app
         env: { ARTIFACT_PASSPHRASE: "${{ secrets.ARTIFACT_PASSPHRASE }}" }
@@ -189,7 +190,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 10   # model usage: see "Costs and limits" in the README
+      max-parallel: 10 # model usage: see "Costs and limits" in the README
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.android) }}
     steps:
@@ -264,7 +265,12 @@ jobs:
         run: bash scripts/encrypt_results.sh "${{ matrix.persona }}"
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: "results-${{ matrix.persona }}", path: results.enc/, retention-days: 14 }
+        with:
+          {
+            name: "results-${{ matrix.persona }}",
+            path: results.enc/,
+            retention-days: 14,
+          }
 
   ios:
     needs: [plan, build-ios]
@@ -272,7 +278,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 5   # free plan: 5 macOS jobs at once
+      max-parallel: 5 # free plan: 5 macOS jobs at once
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.ios) }}
     steps:
@@ -360,4 +366,9 @@ jobs:
         run: bash scripts/encrypt_results.sh "${{ matrix.persona }}"
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: "results-${{ matrix.persona }}", path: results.enc/, retention-days: 14 }
+        with:
+          {
+            name: "results-${{ matrix.persona }}",
+            path: results.enc/,
+            retention-days: 14,
+          }
